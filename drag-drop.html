@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Drag & Drop</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<header class="topbar"><a class="brand" href="index.html">UI Feature Lab</a><nav><a href="chart.html">Chart</a><a href="maps.html">Maps</a><a class="active" href="drag-drop.html">Drag & Drop</a><a href="slider.html">Slider</a><a href="datetime.html">Date & Time</a><a href="tooltips.html">Tooltips</a><a href="upload.html">File Upload</a><a href="test-scenarios.html">Test Scenarios</a></nav></header>
+<main class="container">
+  <div class="page-title"><span class="eyebrow">03 · DRAG & DROP</span><h1>Move and reorder</h1><p class="muted">Drag a card to another position or into the other zone. The highlighted zone shows where it can be dropped.</p></div>
+  <div class="controls" style="margin-bottom:16px"><button class="button secondary" id="reset">Reset</button><span class="value" id="status" aria-live="polite">Ready to drag</span></div>
+  <div class="zones">
+    <section class="panel zone"><h3>Backlog</h3><div class="items drop-target" id="a" data-zone="Backlog"></div></section>
+    <section class="panel zone"><h3>Ready</h3><div class="items drop-target" id="b" data-zone="Ready"></div></section>
+  </div>
+</main>
+<script>
+const initial=[['Design','a'],['Build','a'],['Test','a'],['Launch','b']];
+let dragged=null, moved=false;
+const status=document.getElementById('status');
+function makeItem(text){
+  const el=document.createElement('div');
+  el.className='drag-item'; el.draggable=true; el.tabIndex=0; el.textContent=text;
+  el.addEventListener('dragstart',e=>{dragged=el; moved=false; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',text); el.classList.add('dragging'); status.textContent='Dragging: '+text;});
+  el.addEventListener('dragend',()=>{el.classList.remove('dragging'); clearTargets(); dragged=null; if(!moved)status.textContent='Ready to drag';});
+  el.addEventListener('dragover',e=>{e.preventDefault(); e.stopPropagation(); if(dragged&&dragged!==el){e.dataTransfer.dropEffect='move'; clearTargets(); el.classList.add('drop-before');}});
+  el.addEventListener('dragleave',()=>el.classList.remove('drop-before'));
+  el.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation(); if(!dragged||dragged===el)return; const rect=el.getBoundingClientRect(); if(e.clientY<rect.top+rect.height/2) el.parentNode.insertBefore(dragged,el); else el.parentNode.insertBefore(dragged,el.nextSibling); moved=true; status.textContent='Moved to '+el.parentElement.closest('.zone').querySelector('h3').textContent; clearTargets();});
+  return el;
+}
+function clearTargets(){document.querySelectorAll('.drop-target,.drag-item').forEach(x=>x.classList.remove('drop-active','drop-before'));}
+function populate(){document.getElementById('a').innerHTML='';document.getElementById('b').innerHTML='';initial.forEach(([t,z])=>document.getElementById(z).appendChild(makeItem(t)));}
+document.querySelectorAll('.zone').forEach(panel=>{
+  const zone=panel.querySelector('.drop-target');
+  panel.addEventListener('dragover',e=>{if(!dragged)return; e.preventDefault(); e.dataTransfer.dropEffect='move'; clearTargets(); zone.classList.add('drop-active');});
+  panel.addEventListener('dragleave',e=>{if(!panel.contains(e.relatedTarget))zone.classList.remove('drop-active');});
+  panel.addEventListener('drop',e=>{e.preventDefault(); if(!dragged)return; zone.appendChild(dragged); moved=true; clearTargets(); status.textContent='Moved to '+zone.dataset.zone;});
+});
+document.getElementById('reset').addEventListener('click',()=>{populate();status.textContent='Reset complete';});
+populate();
+</script></body></html>
